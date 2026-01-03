@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include "game.h"
 #include "helpers.h"
+
 void launchServer(struct Server *server){
 
     GameState game;
@@ -35,13 +36,61 @@ void launchServer(struct Server *server){
         send_to_player(new_player->fd, "WAITING FOR PLAYERS %d/%d \n", game.player_count, 5);
     }
 
-    printf("All players connected, game ready to be launched.\n");
-    broadcast_to_players(&game, "ALL PLAYERS CONNECTED. STARTING GAME...\n");
+    printf("All players connected, game ready to be launched.\n\n");
+    broadcast_to_players(&game, "ALL PLAYERS CONNECTED. STARTING GAME...\n\n");
+    create_game(&game);
+    printf("Game created. Dealing hands...\n\n");
+    printf("Player  1 hand: %d %d %d %d %d\n\n", 
+        game.players[0].hand[0],
+        game.players[0].hand[1],
+        game.players[0].hand[2],
+        game.players[0].hand[3],
+        game.players[0].hand[4]
+    );
+
+    printf("Player  2 hand: %d %d %d %d %d\n\n", 
+        game.players[1].hand[0],
+        game.players[1].hand[1],
+        game.players[1].hand[2],
+        game.players[1].hand[3],
+        game.players[1].hand[4]
+    );
+
+    printf("Player  3 hand: %d %d %d %d %d\n\n", 
+        game.players[2].hand[0],
+        game.players[2].hand[1],
+        game.players[2].hand[2],
+        game.players[2].hand[3],
+        game.players[2].hand[4]
+    );
+
+    printf("Player  4 hand: %d %d %d %d %d\n\n", 
+        game.players[3].hand[0],
+        game.players[3].hand[1],
+        game.players[3].hand[2],
+        game.players[3].hand[3],
+        game.players[3].hand[4]
+    );
+
+    printf("Player  5 hand: %d %d %d %d %d\n\n", 
+        game.players[4].hand[0],
+        game.players[4].hand[1],
+        game.players[4].hand[2],
+        game.players[4].hand[3],
+        game.players[4].hand[4]
+    );
 
     for(int i = 0; i < game.player_count; i++){
-        close(game.players[i].fd);
+        send_to_player(game.players[i].fd, "YOUR HAND: %d %d %d %d %d\n", 
+            game.players[i].hand[0],
+            game.players[i].hand[1],
+            game.players[i].hand[2],
+            game.players[i].hand[3],
+            game.players[i].hand[4]
+        );
     }
-    close(server->socket);
+
+    //game_loop(&game);
 
 }
 
