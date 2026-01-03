@@ -1,0 +1,34 @@
+Server:
+- listen on specified port,
+- accept connections until there are 5 players connected,
+- start a game,
+- handle communication needed for the game flow,
+
+Player:
+- connects to server,
+- waits until the game starts,
+- plays the game
+
+Game rules and flow:
+- there are 100 aviable cards, for MVP purposes represented as numbers,
+- each player starts with 5 cards,
+- there is one active player and 4 inactive players each turn,
+- active player changes every turn,
+- active player selects one of his cards and writes one word which he associates with the selected cards,
+- inactive players based on the hint from the active player select one of their cards,
+- they can submit their choice within given time, its possible that all players do so in the same time,
+- after all cards are selected, they are being revealed and each inactive player select which card they think was selected by active player they can do this action at the same time,
+- each inactive player that selected correct card gets 1 point, if more than half of the inactive players got the card correct inactive player also gets a point,
+- each player draws one new card if there are cards aviable to draw, next player becomes active player,
+- game continues until one player reaches 10 point treshold or there are no cards left in the deck and in players hands,
+
+
+General rules:
+- server has to be written in C 
+- player has to have a UI so in order to cooperate smoothly with C server i was thinking to write it in C++/C# or in python
+- both the client and server should work on Linux 
+- each active player card selection phase should take at most 15 seconds
+- each inactive player card selection phase should take at most 15 seconds
+- each card voting phase should take at most 20 seconds
+- if in any of the 3 above selections nothing was selected a server should select a card at random
+- 
