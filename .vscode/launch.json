@@ -1,0 +1,51 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Server (debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/debug/server",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "build-server-debug",
+      "MIMode": "lldb",
+      "externalConsole": false
+    },
+    {
+      "name": "Debug Client (debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/debug/dixit_client",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "build-client-debug",
+      "MIMode": "lldb",
+      "externalConsole": false
+    },
+    {
+      "name": "Run Server (release)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/release/server",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "build-server-release",
+      "MIMode": "lldb",
+      "externalConsole": false
+    },
+    {
+      "name": "Run Client (release)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/release/dixit_client",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "build-client-release",
+      "MIMode": "lldb",
+      "externalConsole": false
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-client-debug",
+      "type": "shell",
+      "command": "make client BUILD=debug",
+      "group": { "kind": "build", "isDefault": false },
+      "problemMatcher": []
+    },
+    {
+      "label": "build-server-debug",
+      "type": "shell",
+      "command": "make server BUILD=debug",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "build-client-release",
+      "type": "shell",
+      "command": "make client BUILD=release",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "build-server-release",
+      "type": "shell",
+      "command": "make server BUILD=release",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      "command": "make clean",
+      "problemMatcher": []
+    }
+  ]
+}
