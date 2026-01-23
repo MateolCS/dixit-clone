@@ -5,13 +5,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h> 
-#include <sys/select.h>
+#include <sys/poll.h>
 #include <unistd.h>
-
-void setnonblock (int fd) {
-    int flags = fcntl(fd, F_GETFL, 0);
-    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-}
 
 struct ReciveArgs {
     MessageQueue* msgQueue;
@@ -24,62 +19,67 @@ void* recive (void* args) {
     MessageQueue* msgQueue = reciveArgs->msgQueue;
     int serverFD = reciveArgs->serverFd;
 
-    fd_set readFDs;
     std::vector<int> clientFDs;
 
     char buffer[256];
 
     while (true) {
-        FD_ZERO(&readFDs);
-        FD_SET(serverFD, &readFDs);
 
-        // dodawanie wszystkich klientow do setu i wyznaczanie max gniazda
-        int maxFD = serverFD;
+        std::vector<pollfd> pollFDs;
+        pollFDs.reserve(clientFDs.size() + 1);
+
+        // dodanie deskryptora serwera do nasluchiwania
+        pollFDs.push_back({serverFD, POLLIN, 0});
         for (int clientFD : clientFDs) {
-            FD_SET(clientFD, &readFDs);
-            if (clientFD > maxFD) {
-                maxFD = clientFD;
-            }
+            pollFDs.push_back({clientFD, POLLIN, 0});
         }
 
-        int ready = select(maxFD + 1, &readFDs, nullptr, nullptr, nullptr);
+        // oczekiwanie na zdarzenia
+        int ready = poll(pollFDs.data(), pollFDs.size(), -1);
         if(ready < 0) {
-            printf("select error\n");
+            printf("poll error\n");
             continue;
         }
 
         // akceptowanie polaczen do serwera
-        if (FD_ISSET(serverFD, &readFDs)) {
-            int newClientFD = accept(serverFD, nullptr, nullptr);
-            if (newClientFD < 0) {
-                printf("faild to accept\n");
-            } else {
-                setnonblock(newClientFD);
-                clientFDs.push_back(newClientFD);
-                printf("client %d connected\n", newClientFD);
+        if (pollFDs[0].revents & POLLIN) {
+            int clientFD = accept(serverFD, nullptr, nullptr);
+            if (clientFD != -1) {
+                printf("client %d connected\n", clientFD);
+                clientFDs.push_back(clientFD);
             }
+        }
+        
+        // odbieranie danych od klientow
+        std::vector<int> disconnectedClients;
+        for (size_t i = 1; i < pollFDs.size(); i++) {
+            if (pollFDs[i].revents & POLLIN) {
+                ssize_t bytesRead = read(pollFDs[i].fd, buffer, sizeof(buffer));
+                if (bytesRead <= 0) {
+                    // dodanie do listy rozlaczonych klientow
+                    disconnectedClients.push_back(pollFDs[i].fd);
+                    close(pollFDs[i].fd);
+                    printf("client %d disconnected\n", pollFDs[i].fd);
+                    continue;
+                } 
+                // przetwarzanie odebranych danych
+                Message msg;
+                msg.type = buffer[0];
+                msgQueue->push(msg);
+            } 
         }
 
-        for (auto it = clientFDs.begin(); it != clientFDs.end(); ) {
-            int clientFD = *it;
-            if (FD_ISSET(clientFD, &readFDs)) {
-                int n = read(clientFD, buffer, sizeof(buffer));
-                if (n <= 0) {
-                    printf("client %d disconnected\n", clientFD);
-                    close(clientFD);
-                    it = clientFDs.erase(it);
-                } else {
-                    Message msg;
-                    //odczytywanie wiadomosci 
-                    msg.type = buffer[0];
-                    msgQueue->push(msg);
-                    it++;
-                }
-            } else {
-                it++;
-            }
+        // usuwanie rozlaczonych klientow
+        for (auto discClient : disconnectedClients) {
+            clientFDs.erase(std::remove(clientFDs.begin(), clientFDs.end(), discClient), clientFDs.end());
         }
+
     }
+    return nullptr;
+}
+
+void* send (void* args) {
+    // do zaimplementowania
     return nullptr;
 }
 
@@ -90,7 +90,6 @@ int main(int argc, char** argv) {
         perror("faild to create socket\n");
         exit(EXIT_FAILURE);
     }
-    setnonblock(serverFD);
 
     struct sockaddr_in serverAddr;
     memset(&serverAddr,0,sizeof serverAddr);
@@ -106,7 +105,7 @@ int main(int argc, char** argv) {
     listen(serverFD, 5);
 
     MessageQueue inputQueue = MessageQueue();
-    pthread_t reciveThread;
+    pthread_t reciveThread, sendThread;
     ReciveArgs reciveArgs;
     reciveArgs.msgQueue = &inputQueue;
     reciveArgs.serverFd = serverFD;
