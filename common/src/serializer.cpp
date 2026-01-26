@@ -27,7 +27,7 @@ std::vector<uint8_t> serializeMessage(const Message& msg) {
                 uint8_t clueSize = clue.size() > 0xFF ? 0xFF : static_cast<uint8_t>(clue.size());
                 data.push_back(clueSize);
                 data.insert(data.end(), clue.begin(), clue.begin() + clueSize);
-                data.back() = '\0'; // zapewnienie zakoncznenia nullem
+                //data.back() = '\0'; // zapewnienie zakoncznenia nullem
             }
             break;
 
@@ -112,7 +112,7 @@ std::vector<uint8_t> serializeMessage(const Message& msg) {
                     uint8_t clueSize = clue->size() > 0xFF ? 0xFF : static_cast<uint8_t>(clue->size());
                     data.push_back(clueSize);
                     data.insert(data.end(), clue->begin(), clue->begin() + clueSize);
-                    data.back() = '\0'; // zapewnienie zakoncznenia nullem
+                    //data.back() = '\0'; // zapewnienie zakoncznenia nullem
                 } else {
                     data.push_back(0x00);
                 }
