@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-
+#include <cstdint>
 class Deck {
 
 public:

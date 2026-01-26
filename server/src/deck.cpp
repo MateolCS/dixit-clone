@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <random>
 #include <stdexcept>
+#include <unistd.h>
 
 constexpr uint8_t c_totalCards = 84;
 
