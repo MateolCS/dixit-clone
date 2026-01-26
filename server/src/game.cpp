@@ -128,7 +128,7 @@ void Game::giveClue(size_t playerId, uint8_t cardId, const std::string& clue) {
     m_deck.returnCard(cardId);
 
     currentRound.playedCards.cards[currentRound.storytellerIndex] = std::optional(cardId);
-    currentRound.votes.votes[currentRound.storytellerIndex] = std::optional(currentRound.storytellerIndex);
+    currentRound.votes.votes[currentRound.storytellerIndex] = std::optional(cardId);
 
     // zapisanie wskazowki i powiadomienie gracza o sukcesie
     currentRound.clue.text = clue;
@@ -535,7 +535,7 @@ void Game::scoreRound() {
             continue;
         }
         for (size_t player = 0; player < c_maxPlayers; player++) {
-            if (currentRound.playedCards.cards[player] == vote.value()) {
+            if (currentRound.playedCards.cards[player].value()== vote.value()) {
                 recivedVotes[player]++;
                 break;
             }
@@ -557,7 +557,7 @@ void Game::scoreRound() {
             if (i != currentRound.storytellerIndex) {
                 // dodanie punktow za glosy na karte gracza
                 m_players[i].score += recivedVotes[i];
-                if (currentRound.votes.votes[i].value() == currentRound.storytellerIndex) {
+                if (currentRound.votes.votes[i].value() == currentRound.playedCards.cards[currentRound.storytellerIndex].value()) {
                     m_players[i].score += 3;
                 }
             }

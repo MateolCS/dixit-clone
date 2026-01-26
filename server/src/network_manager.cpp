@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
+#include <algorithm>
 
 #include "serializer.h"
 
