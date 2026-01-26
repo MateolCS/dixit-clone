@@ -274,7 +274,7 @@ void Game::playCard(size_t playerId, uint8_t cardId) {
                     .hand = m_players[i].hand,
                     .isStoryteller = currentRound.storytellerIndex == i,
                     .nextPhaseTime = endPhaseMilliseconds,
-                    .roundState = GameStateUpdate::WaitingForCards,
+                    .roundState = GameStateUpdate::WaitingForVotes,
                     .clue = currentRound.clue.text,
                     .playedCards = cards,
                     .votes = std::nullopt

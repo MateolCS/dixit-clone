@@ -1,5 +1,6 @@
 #include "dixit_server.h"
 #include <algorithm>
+
 DixitServer::DixitServer() {}
 
 DixitServer::~DixitServer() {}
