@@ -33,7 +33,7 @@ void DixitServer::run() {
                             break;
                         }
 
-                        if (!m_games.back().canJoin()) {
+                        if (m_games.empty() || !m_games.back().canJoin()) {
                             m_games.push_back(Game(&m_networkManager));
                         }
 
@@ -126,6 +126,23 @@ void DixitServer::run() {
                 default:
                     break;
             }
+        }
+
+        // usuwanie zakoncznych gier
+        m_games.erase(
+            std::remove_if(
+                m_games.begin(),
+                m_games.end(),
+                [](const Game& game) {
+                    return game.isEnded();
+                }
+            ),
+            m_games.end()
+        );
+
+        // aktualizacja wszystkich gier
+        for (auto& game : m_games) {
+            game.update();
         }
     }
 

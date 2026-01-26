@@ -23,6 +23,7 @@ public:
     void update();
     bool hasPlayer(size_t playerId) const;
     bool canJoin() const;
+    bool isEnded() const;
     
 private:
     void dealCards();

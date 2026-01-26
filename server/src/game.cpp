@@ -369,7 +369,7 @@ void Game::vote(size_t playerId, uint8_t cardId) {
                     .hand = m_players[i].hand,
                     .isStoryteller = currentRound.storytellerIndex == i,
                     .nextPhaseTime = nextRoundTimeMilliseconds,
-                    .roundState = GameStateUpdate::WaitingForCards,
+                    .roundState = GameStateUpdate::RoundEnded,
                     .clue = currentRound.clue.text,
                     .playedCards = cards,
                     .votes = votes
@@ -435,6 +435,10 @@ bool Game::canJoin() const {
     return !m_gameStarted && !m_gameEnded && m_players.size() < c_maxPlayers;
 }
 
+bool Game::isEnded() const {
+    return m_gameEnded;
+}
+
 void Game::dealCards() {
     for (auto& player : m_players) {
         while (player.hand.size() < 6) {
@@ -476,6 +480,36 @@ void Game::startNewRound() {
     newRound.votes = votes;
     newRound.nexRoundStartTime = now;
     m_rounds.push_back(newRound);
+
+    // powiadomienie wszystkich graczy o rozpoczeciu nowej rundy
+    auto endPhaseTime = now + c_clueTimeLimit;
+    m_rounds.back().clue.endTime = endPhaseTime;
+    auto endPhaseMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endPhaseTime.time_since_epoch()).count();
+
+    std::vector<uint8_t> scores;
+    scores.reserve(m_players.size());
+    for (const auto& player : m_players) {
+        scores.push_back(player.score);
+    }
+
+    for (size_t i = 0; i < c_maxPlayers; i++) {
+        m_networkManager->sendMessage( 
+            m_players[i].id,
+            GameStateUpdate{
+                .playersCount = c_maxPlayers,
+                .playerIndex = (uint8_t) i,
+                .playerScores = scores,
+                .hand = m_players[i].hand,
+                .isStoryteller = m_rounds.back().storytellerIndex == i,
+                .nextPhaseTime = endPhaseMilliseconds,
+                .roundState = GameStateUpdate::WaitingForClue,
+                .clue = std::nullopt,
+                .playedCards = std::nullopt,
+                .votes = std::nullopt
+            }
+        );
+    }
+
 }
 
 void Game::scoreRound() {
