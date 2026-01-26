@@ -72,6 +72,6 @@ private:
     NetworkManager* m_networkManager;
     size_t m_gameId;
 
-    constexpr static size_t c_maxPlayers = 5;
+    constexpr static size_t c_maxPlayers = 3;
 
 };

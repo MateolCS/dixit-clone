@@ -5,22 +5,30 @@ CXX ?= g++
 # Build configuration: 'release' (default) or 'debug'
 BUILD ?= release
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -O2
+
+
 ifeq ($(strip $(BUILD)),debug)
-CXXFLAGS += -g -O0 -DDEBUG
+    CXXFLAGS += -g -O0 -DDEBUG
 else
-CXXFLAGS += -O3 -DNDEBUG
+    CXXFLAGS += -O3 -DNDEBUG
 endif
-# Binaries are placed in `bin/$(BUILD)` by default (e.g. bin/release)
+
+
+CLIENT_LIBS := -lsfml-graphics -lsfml-window -lsfml-system
+
+SERVER_LIBS := -lpthread
+
+
 BINROOT ?= bin
 OBJROOT ?= bin_int
 BINDIR ?= $(BINROOT)/$(BUILD)
-# Intermediate object directory; set to empty (`OBJDIR=`) to place objects
-# alongside sources.
 OBJDIR ?= $(OBJROOT)/$(BUILD)
+
 
 CLIENT_SRCS := $(wildcard client/src/*.cpp)
 SERVER_SRCS := $(wildcard server/src/*.cpp)
 COMMON_SRCS := $(wildcard common/src/*.cpp)
+
 
 CLIENT_OBJS := $(patsubst client/src/%.cpp,$(OBJDIR)/client/%.o,$(CLIENT_SRCS))
 SERVER_OBJS := $(patsubst server/src/%.cpp,$(OBJDIR)/server/%.o,$(SERVER_SRCS))
@@ -34,15 +42,28 @@ client: $(BINDIR)/client
 
 server: $(BINDIR)/server
 
+
 $(BINDIR)/client: $(CLIENT_OBJS) $(COMMON_OBJS)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	@echo "[LINK] Linking Client..."
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(CLIENT_LIBS)
+	@echo "[COPY] Copying assets (font)..."
+	@# Kopiujemy czcionkę tylko jeśli istnieje w głównym katalogu
+	@if [ -f "CONSOLA.TTF" ]; then \
+		cp CONSOLA.TTF $(BINDIR)/; \
+		echo "       Copied CONSOLA.TTF to $(BINDIR)/"; \
+	else \
+		echo "       [WARNING] CONSOLA.TTF not found in root directory!"; \
+	fi
+
 
 $(BINDIR)/server: $(SERVER_OBJS) $(COMMON_OBJS)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	@echo "[LINK] Linking Server..."
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(SERVER_LIBS)
 
-$(OBJDIR)/dixit_client/%.o: dixit_client/src/%.cpp
+
+$(OBJDIR)/client/%.o: client/src/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -Iclient/include -Icommon/include -c $< -o $@
 
@@ -55,6 +76,7 @@ $(OBJDIR)/common/%.o: common/src/%.cpp
 	$(CXX) $(CXXFLAGS) -Icommon/include -c $< -o $@
 
 clean:
+	@echo "Cleaning build directories..."
 	rm -rf $(BINROOT)
 	rm -rf $(OBJROOT)
 
@@ -62,14 +84,4 @@ rebuild: clean all
 
 help:
 	@echo "Usage: make [target] [VARIABLE=value]"
-	@echo "Targets: all, client, server, clean, distclean, rebuild, help"
-	@echo "Variables:" 
-	@echo "  BUILD     (release|debug) default: release"
-	@echo "  CXX       (default g++)"
-	@echo "  CXXFLAGS  (base flags; debug/release add optimization/debug flags)"
-	@echo "  BINDIR    (default bin/\$(BUILD))"
-	@echo "  OBJDIR    (default bin_int/\$(BUILD); set empty to avoid intermediate dir)"
-	@echo "Examples:"
-	@echo "  make                 # build release (default)"
-	@echo "  make BUILD=debug     # build debug binaries"
-	@echo "  make client BUILD=debug OBJDIR=  # debug client, objects next to sources"
+	@echo "Targets: all, client, server, clean, rebuild"
