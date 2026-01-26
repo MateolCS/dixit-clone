@@ -21,7 +21,13 @@ void NetworkManager::initialize() {
     serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddr.sin_port = htons(1100);
 
-    bind(m_serverSocketFd, (sockaddr*)&serverAddr, sizeof(serverAddr));
+    if (bind(m_serverSocketFd, (sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        close(m_serverSocketFd);
+        throw std::runtime_error("Failed to bind server socket");
+    }
+
+    printf("Server initialized on port 1100\n");
+    
     listen(m_serverSocketFd, 5);
 }
 
@@ -52,8 +58,10 @@ std::vector<NetworkEvent> NetworkManager::poolMessages() {
     // obsługa nowych połączeń
     if (fds[0].revents & POLLIN) {
         int clientSocket = accept(m_serverSocketFd, nullptr, nullptr);
+        if (clientSocket < 0) printf("Failed to accept new client connection\n");
         if (clientSocket >= 0) {
             m_connections.push_back({ clientSocket, m_nextId });
+            printf("New client connected (fd: %d) with ID %zu\n", clientSocket, m_nextId);
             m_nextId++;
         }
     }
@@ -67,6 +75,7 @@ std::vector<NetworkEvent> NetworkManager::poolMessages() {
             // obsługa rozłączenia
             if (bytesRead <= 0) {
                 close(fds[i].fd);
+                printf("Client disconnected (fd: %d)\n", fds[i].fd);
                 disconnectedFds.push_back(fds[i].fd);
                 continue;
             }
@@ -88,6 +97,7 @@ std::vector<NetworkEvent> NetworkManager::poolMessages() {
             if (messageOpt.has_value()) {
                 events.push_back({ senderId, messageOpt.value() });
             }
+            printf("Received message from client ID %zu (fd: %d)\n", senderId, fds[i].fd);
         }
     }
 
@@ -114,6 +124,7 @@ void NetworkManager::sendMessage(size_t receiverId, const Message& message) {
             // wysłanie 
             write(connection.socketFd, &messageLength, sizeof(uint32_t));
             write(connection.socketFd, serializedMessage.data(), serializedMessage.size());
+            printf("Sent message to client ID %zu (fd: %d)\n", receiverId, connection.socketFd);
         }
     }
 }
