@@ -26,7 +26,7 @@ void NetworkManager::initialize() {
         throw std::runtime_error("Failed to bind server socket");
     }
 
-    printf("Server initialized on port 1100\n");
+    printf("[INFO] Serwer dziala na porcie 1100\n");
     
     listen(m_serverSocketFd, 5);
 }
@@ -58,10 +58,10 @@ std::vector<NetworkEvent> NetworkManager::poolMessages() {
     // obsługa nowych połączeń
     if (fds[0].revents & POLLIN) {
         int clientSocket = accept(m_serverSocketFd, nullptr, nullptr);
-        if (clientSocket < 0) printf("Failed to accept new client connection\n");
+        if (clientSocket < 0) printf("[INFO] Nie udalo sie zaakceptowac polaczenia\n");
         if (clientSocket >= 0) {
             m_connections.push_back({ clientSocket, m_nextId });
-            printf("New client connected (fd: %d) with ID %zu\n", clientSocket, m_nextId);
+            printf("[INFO] Nowy klient (fd: %d) z ID %zu\n", clientSocket, m_nextId);
             m_nextId++;
         }
     }
@@ -75,7 +75,7 @@ std::vector<NetworkEvent> NetworkManager::poolMessages() {
             // obsługa rozłączenia
             if (bytesRead <= 0) {
                 close(fds[i].fd);
-                printf("Client disconnected (fd: %d)\n", fds[i].fd);
+                printf("[INFO] Rozlaczono klienta (fd: %d)\n", fds[i].fd);
                 disconnectedFds.push_back(fds[i].fd);
                 continue;
             }
@@ -97,8 +97,19 @@ std::vector<NetworkEvent> NetworkManager::poolMessages() {
             if (messageOpt.has_value()) {
                 events.push_back({ senderId, messageOpt.value() });
             }
-            printf("Received message from client ID %zu (fd: %d)\n", senderId, fds[i].fd);
+            printf("[INFO] Otrzymano wiadomosc od klienta (fd: %d) z ID %zu\n", fds[i].fd, senderId);
         }
+    }
+
+    for (int fd : disconnectedFds) {
+        m_connections.erase(
+            std::remove_if(
+                m_connections.begin(),
+                m_connections.end(),
+                [fd](const Connection& conn) { return conn.socketFd == fd; }
+            ),
+            m_connections.end()
+        );
     }
 
     return events;
@@ -124,7 +135,7 @@ void NetworkManager::sendMessage(size_t receiverId, const Message& message) {
             // wysłanie 
             write(connection.socketFd, &messageLength, sizeof(uint32_t));
             write(connection.socketFd, serializedMessage.data(), serializedMessage.size());
-            printf("Sent message to client ID %zu (fd: %d)\n", receiverId, connection.socketFd);
+            printf("[INFO] Wyslano wiadomosc do klienta (fd: %d) z ID %zu\n", connection.socketFd, receiverId);
         }
     }
 }
