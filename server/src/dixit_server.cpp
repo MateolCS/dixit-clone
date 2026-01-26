@@ -7,6 +7,7 @@ DixitServer::~DixitServer() {}
 
 void DixitServer::run() {
     m_networkManager.initialize();
+    size_t gameId = 0;
     
     bool running = true;
     while (running) {
@@ -35,7 +36,8 @@ void DixitServer::run() {
                         }
 
                         if (m_games.empty() || !m_games.back().canJoin()) {
-                            m_games.push_back(Game(&m_networkManager));
+                            m_games.push_back(Game(&m_networkManager, gameId));
+                            gameId++;
                         }
 
                         m_games.back().addPlayer(playerId);

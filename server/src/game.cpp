@@ -8,7 +8,7 @@ constexpr static std::chrono::duration c_playCardTimeLimit = std::chrono::second
 constexpr static std::chrono::duration c_voteTimeLimit = std::chrono::seconds(60);
 constexpr static std::chrono::duration c_roundResultsTime = std::chrono::seconds(5);
 
-Game::Game(NetworkManager* networkManager) : m_networkManager(networkManager) {}
+Game::Game(NetworkManager* networkManager, size_t gameId) : m_networkManager(networkManager), m_gameId(gameId) {}
 Game::~Game() {}
 
 void Game::addPlayer(size_t playerId) {
@@ -36,6 +36,7 @@ void Game::addPlayer(size_t playerId) {
         playerId,
         JoinGameResponse{ true, static_cast<uint8_t>(m_players.size() - 1) }
     );
+    printf("[INFO-GRA-%zu] Dodano gracza %zu do gry\n", m_gameId, playerId);
 
     // wystartowanie gry gdy pelny stol 
     if (m_players.size() == c_maxPlayers) {
@@ -73,6 +74,7 @@ void Game::startGame() {
             }
         );
     }
+    printf("[INFO-GRA-%zu] Gra rozpoczeta\n", m_gameId);
 
     startNewRound();
 }
@@ -135,6 +137,7 @@ void Game::giveClue(size_t playerId, uint8_t cardId, const std::string& clue) {
         playerId,
         GiveClueResponse{ true }
     );
+    printf("[INFO-GRA-%zu] Gracz %zu podal wskazowke\n", m_gameId, playerId);
     
     // powiadomienie wszystkich graczy o podanej wskazowce
     auto endPhaseTime = std::chrono::steady_clock::now() + c_playCardTimeLimit;
@@ -164,6 +167,7 @@ void Game::giveClue(size_t playerId, uint8_t cardId, const std::string& clue) {
             }
         );
     }
+    printf("[INFO-GRA-%zu] Wszyscy gracze powiadomieni o podanej wskazowce\n", m_gameId);
 }
 
 void Game::playCard(size_t playerId, uint8_t cardId) {
@@ -234,6 +238,7 @@ void Game::playCard(size_t playerId, uint8_t cardId) {
         playerId,
         PlayCardResponse{ true }
     );
+    printf("[INFO-GRA-%zu] Gracz %zu zagral karte\n", m_gameId, playerId);
 
     // sprawdzenie czy wszyscy gracze juz zagrali karty
     bool allPlayed = std::all_of(
@@ -281,6 +286,7 @@ void Game::playCard(size_t playerId, uint8_t cardId) {
                 }
             );
         }
+        printf("[INFO-GRA-%zu] Wszyscy gracze powiadomieni o zagranych kartach\n", m_gameId);
     }
 }
 
@@ -324,6 +330,7 @@ void Game::vote(size_t playerId, uint8_t cardId) {
         playerId,
         VoteResponse{ true }
     );
+    printf("[INFO-GRA-%zu] Gracz %zu oddal glos\n", m_gameId, playerId);
 
     // sprawdzenie czy wszyscy gracze juz zaglosowali
     bool allVoted = std::all_of(
@@ -377,6 +384,7 @@ void Game::vote(size_t playerId, uint8_t cardId) {
             );
         }
     }
+    printf("[INFO-GRA-%zu] Wszyscy gracze powiadomieni o wynikach rundy\n", m_gameId);
 }
 
 void Game::update() {
@@ -521,17 +529,23 @@ void Game::scoreRound() {
     if (!currentRound.votes.allVoted) return;
     
     // podliczenie glosow na karte kazdego gracza
-    std::vector<size_t> recivedVotes(m_players.size(), 0);
+    std::vector<size_t> recivedVotes(c_maxPlayers, 0);
     for (const auto& vote : currentRound.votes.votes) {
-        if (vote.has_value()) {
-            recivedVotes[vote.value()]++;
+        if (!vote.has_value()) {
+            continue;
+        }
+        for (size_t player = 0; player < c_maxPlayers; player++) {
+            if (currentRound.playedCards.cards[player] == vote.value()) {
+                recivedVotes[player]++;
+                break;
+            }
         }
     }
     
     // dodanie punktow graczom gdy wszyscy lub nikt nie odgadl karty - 2 dla wszystkich, oprócz narratora
     if (recivedVotes[currentRound.storytellerIndex] == 1 ||
-        recivedVotes[currentRound.storytellerIndex] == m_players.size()) {
-        for (size_t i = 0; i < m_players.size(); ++i) {
+        recivedVotes[currentRound.storytellerIndex] == c_maxPlayers) {
+        for (size_t i = 0; i < c_maxPlayers; i++) {
             if (i != currentRound.storytellerIndex) {
                 m_players[i].score += 2;
             }
@@ -539,7 +553,7 @@ void Game::scoreRound() {
     } else {
         // rozdanie punktow gdy nie wszyscy odgadli karte - 3 dla narratora i 3 dla graczy, ktorzy odgadli karte, po punkcie za glos na karte gracza
         m_players[currentRound.storytellerIndex].score += 3;
-        for (size_t i = 0; i < m_players.size(); i++) {
+        for (size_t i = 0; i < c_maxPlayers; i++) {
             if (i != currentRound.storytellerIndex) {
                 // dodanie punktow za glosy na karte gracza
                 m_players[i].score += recivedVotes[i];
@@ -585,4 +599,5 @@ void Game::endGame() {
             }
         );
     }
+    printf("[INFO-GRA-%zu] Gra zakonczona\n", m_gameId);
 }

@@ -11,7 +11,7 @@
 class Game {
 
 public:
-    Game(NetworkManager* networkManager);
+    Game(NetworkManager* networkManager, size_t gameId);
     ~Game();
 
     void addPlayer(size_t playerId);
@@ -70,6 +70,7 @@ private:
 
     Deck m_deck;
     NetworkManager* m_networkManager;
+    size_t m_gameId;
 
     constexpr static size_t c_maxPlayers = 5;
 
